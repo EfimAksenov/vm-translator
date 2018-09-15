@@ -26,13 +26,13 @@ public class Parser {
                 return;
             }
             System.out.println(command);
-            String[] splittedLine = command.split(" ");
+            String[] splittedLine = command.split("//")[0].trim().split(" ");
             currentCommand = splittedLine[0];
             if (splittedLine.length > 1) {
-                arg1 = command.split(" ")[1];
+                arg1 = splittedLine[1];
             }
             if (splittedLine.length > 2) {
-                arg2 = Integer.parseInt(command.split(" ")[2]);
+                arg2 = Integer.parseInt(splittedLine[2]);
             }
             currentCommandType = parseCommandType();
         }
@@ -58,6 +58,12 @@ public class Parser {
                 return CommandType.C_POP;
             case "push":
                 return CommandType.C_PUSH;
+            case "label":
+                return CommandType.C_LABEL;
+            case "goto":
+                return CommandType.C_GOTO;
+            case "if-goto":
+                return CommandType.C_IF;
             default:
                 return null;
         }

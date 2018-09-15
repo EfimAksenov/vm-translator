@@ -19,6 +19,15 @@ public class App
                 case C_POP:
                     codeWriter.writePushPop(parser.getCommandType(), parser.getArg1(), parser.getArg2());
                     break;
+                case C_LABEL:
+                    codeWriter.writeLabel(parser.getCommandType(), parser.getArg1());
+                    break;
+                case C_GOTO:
+                    codeWriter.writeGoto(parser.getCommandType(), parser.getArg1());
+                    break;
+                case C_IF:
+                    codeWriter.writeIf(parser.getCommandType(), parser.getArg1());
+                    break;
             }
         }
         parser.close();

@@ -236,4 +236,25 @@ public class CodeWriter {
         code.add("M=M+1");
         return code;
     }
+
+    public void writeLabel(CommandType commandType, String label) throws IOException {
+        ArrayList<String> code = new ArrayList<>();
+        code.add("(" + label + ")");
+        this.writeCode(code);
+    }
+
+    public void writeGoto(CommandType commandType, String label) throws IOException {
+        ArrayList<String> code = new ArrayList<>();
+        code.add("@" + label);
+        code.add("0;JMP");
+        this.writeCode(code);
+    }
+
+    public void writeIf(CommandType commandType, String label) throws IOException {
+        ArrayList<String> code = new ArrayList<>(this.generatePopStack());
+        code.add("D=M");
+        code.add("@" + label);
+        code.add("D;JNE");
+        this.writeCode(code);
+    }
 }

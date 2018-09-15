@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CodeWriter {
 
@@ -13,6 +15,7 @@ public class CodeWriter {
     private static int eqNumber = 0;
     private static int ltNumber = 0;
     private static int gtNumber = 0;
+    private static Map<String, Integer> funcNamesNum = new HashMap<>();
 
     public CodeWriter(String file) throws IOException {
         out = new FileWriter(new File(file.replace(".vm", ".asm")));
@@ -256,5 +259,160 @@ public class CodeWriter {
         code.add("@" + label);
         code.add("D;JNE");
         this.writeCode(code);
+    }
+
+    public void writeFunction(CommandType commandType, String funcName, int numLocals) throws IOException {
+        ArrayList<String> code = new ArrayList<>();
+        code.add("(" + funcName + ")");
+        while (numLocals > 0) {
+            code.add("@0");
+            code.add("D=A");
+            code.add("@SP");
+            code.add("A=M");
+            code.add("M=D");
+            code.addAll(this.generatePushStack());
+            numLocals--;
+        }
+        this.writeCode(code);
+    }
+
+    public void writeReturn(CommandType commandType) throws IOException {
+        ArrayList<String> code = new ArrayList<>();
+        // frame R14, retAddr R15
+        // frame = LCL
+        code.add("@LCL");
+        code.add("D=M");
+        code.add("@R14");
+        code.add("M=D");
+        // retAddr = *(frame-5)
+        code.add("@5");
+        code.add("A=D-A");
+        code.add("D=M");
+        code.add("@R15");
+        code.add("M=D");
+        // *ARG = pop
+        code.addAll(this.generatePopStack());
+        code.add("D=M");
+        code.add("@ARG");
+        code.add("A=M");
+        code.add("M=D");
+        // SP=ARG+1
+        code.add("@ARG");
+        code.add("D=M");
+        code.add("D=D+1");
+        code.add("@SP");
+        code.add("M=D");
+        // THAT=*(frame-1)
+        // mutate frame
+        code.add("@R14");
+        code.add("M=M-1");
+        code.add("A=M");
+        code.add("D=M");
+        code.add("@THAT");
+        code.add("M=D");
+        // THIS=*(frame-2)
+        // mutate frame
+        code.add("@R14");
+        code.add("M=M-1");
+        code.add("A=M");
+        code.add("D=M");
+        code.add("@THIS");
+        code.add("M=D");
+        // ARG=*(frame-3)
+        // mutate frame
+        code.add("@R14");
+        code.add("M=M-1");
+        code.add("A=M");
+        code.add("D=M");
+        code.add("@ARG");
+        code.add("M=D");
+        // LCL=*(frame-4)
+        // mutate frame
+        code.add("@R14");
+        code.add("M=M-1");
+        code.add("A=M");
+        code.add("D=M");
+        code.add("@LCL");
+        code.add("M=D");
+        // goto retAddr
+        code.add("@R15");
+        code.add("A=M");
+        code.add("0;JMP");
+        this.writeCode(code);
+    }
+
+    public void writeCall(CommandType commandType, String funcName, int numArgs) throws IOException {
+        ArrayList<String> code = new ArrayList<>();
+        // push returnAddress
+        code.add("@" + generateRetAddr(funcName));
+        code.add("D=A");
+        code.add("@SP");
+        code.add("A=M");
+        code.add("M=D");
+        code.addAll(generatePushStack());
+        // push LCL
+        code.add("@LCL");
+        code.add("D=M");
+        code.add("@SP");
+        code.add("A=M");
+        code.add("M=D");
+        code.addAll(generatePushStack());
+        // push ARG
+        code.add("@ARG");
+        code.add("D=M");
+        code.add("@SP");
+        code.add("A=M");
+        code.add("M=D");
+        code.addAll(generatePushStack());
+        // push THIS
+        code.add("@THIS");
+        code.add("D=M");
+        code.add("@SP");
+        code.add("A=M");
+        code.add("M=D");
+        code.addAll(generatePushStack());
+        // push THAT
+        code.add("@THAT");
+        code.add("D=M");
+        code.add("@SP");
+        code.add("A=M");
+        code.add("M=D");
+        code.addAll(generatePushStack());
+        // ARG = SP - nArgs - 5
+        code.add("@"+ (numArgs + 5));
+        code.add("D=A");
+        code.add("@SP");
+        code.add("D=M-D");
+        code.add("@ARG");
+        code.add("M=D");
+        // LCL = SP
+        code.add("@SP");
+        code.add("D=M");
+        code.add("@LCL");
+        code.add("M=D");
+        // goto funcName
+        code.add("@" + funcName);
+        code.add("0;JMP");
+        code.add("(" + generateRetAddr(funcName) + ")");
+
+        incrementFuncNameNum(funcName);
+        writeCode(code);
+    }
+
+    private String generateRetAddr(String funcName) {
+        int num = 0;
+        if(funcNamesNum.containsKey(funcName)) {
+            num = funcNamesNum.get(funcName);
+        } else {
+            funcNamesNum.put(funcName, num);
+        }
+        return funcName + num;
+    }
+
+    private void incrementFuncNameNum(String funcName) {
+        if(funcNamesNum.containsKey(funcName)) {
+            int num = funcNamesNum.get(funcName);
+            funcNamesNum.put(funcName, ++num);
+        }
     }
 }

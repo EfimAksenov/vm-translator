@@ -28,6 +28,15 @@ public class App
                 case C_IF:
                     codeWriter.writeIf(parser.getCommandType(), parser.getArg1());
                     break;
+                case C_FUNCTION:
+                    codeWriter.writeFunction(parser.getCommandType(), parser.getArg1(), parser.getArg2());
+                    break;
+                case C_RETURN:
+                    codeWriter.writeReturn(parser.getCommandType());
+                    break;
+                case C_CALL:
+                    codeWriter.writeCall(parser.getCommandType(), parser.getArg1(), parser.getArg2());
+                    break;
             }
         }
         parser.close();

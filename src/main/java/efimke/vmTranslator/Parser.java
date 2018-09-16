@@ -1,21 +1,58 @@
 package efimke.vmTranslator;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.stream.Stream;
 
 public class Parser {
 
+    private Queue<Path> pathsToVmFiles = new LinkedList<>();
     private BufferedReader in;
+    private String currentFileName;
     private String currentCommand;
     private String arg1;
     private Integer arg2;
     private CommandType currentCommandType;
 
-    Parser(String file) throws FileNotFoundException {
-        this.in = new BufferedReader(new FileReader(new File(file)));
+    Parser(String uri) throws IOException {
+        Path path = Paths.get(uri);
+        if (Files.isDirectory(path)) {
+//            for (File file : path.toFile().listFiles()) {
+//                if (file.getName().endsWith(".vm")) {
+//                    this.in.offer(new BufferedReader(new FileReader(file)));
+//                }
+//            }
+            Stream<Path> paths = Files.walk(path);
+            paths.forEach(filePath -> {
+                if (filePath.getFileName().toString().endsWith(".vm")) {
+                    this.pathsToVmFiles.offer(filePath);
+                        System.out.println(filePath.toString());
+                }
+            });
+            this.in = new BufferedReader(new FileReader(new File(pathsToVmFiles.poll().toString())));
+        } else {
+            this.pathsToVmFiles.offer(path);
+        }
     }
 
     public boolean hasMoreCommands() throws IOException {
-        return in.ready();
+        boolean result = false;
+        if (!in.ready()) {
+            in.close();
+            while (pathsToVmFiles.peek() != null) {
+               Path path = pathsToVmFiles.poll();
+               this.currentFileName = path.getFileName().toString().replace(".vm", "");
+               this.in = new BufferedReader(new FileReader(new File(path.toString())));
+               return hasMoreCommands();
+            }
+        } else {
+            result = true;
+        }
+        return result;
     }
 
     public void advance() throws IOException {
@@ -25,7 +62,6 @@ public class Parser {
                 advance();
                 return;
             }
-            System.out.println(command);
             String[] splittedLine = command.split("//")[0].trim().split(" ");
             currentCommand = splittedLine[0];
             if (splittedLine.length > 1) {
@@ -98,11 +134,15 @@ public class Parser {
         }
     }
 
-    public void close() throws IOException{
+    public void close() throws IOException {
         in.close();
     }
 
-    public String getCurrentCommand () {
+    public String getCurrentFileName() {
+        return currentFileName;
+    }
+
+    public String getCurrentCommand() {
         return currentCommand;
     }
 }

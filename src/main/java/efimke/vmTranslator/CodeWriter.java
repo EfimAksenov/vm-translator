@@ -3,6 +3,9 @@ package efimke.vmTranslator;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,10 +20,16 @@ public class CodeWriter {
     private static int gtNumber = 0;
     private static Map<String, Integer> funcNamesNum = new HashMap<>();
 
-    public CodeWriter(String file) throws IOException {
-        out = new FileWriter(new File(file.replace(".vm", ".asm")));
-        String[] tmp = file.split("/");
-        fileName = tmp[tmp.length - 1].split("[.]")[0];
+    public CodeWriter(String uri) throws IOException {
+        Path path = Paths.get(uri);
+        if(Files.isDirectory(path)) {
+            fileName = path.getFileName().toString() + ".asm";
+            out = new FileWriter(new File(path.toString(), this.fileName));
+            this.writeInit();
+        } else {
+            fileName = path.getFileName().toString().replace(".vm", ".asm");
+            out = new FileWriter(new File(path.toString().replace(".vm", ".asm")));
+        }
     }
 
     public void writeArithmetic(String command) throws IOException {
@@ -414,5 +423,19 @@ public class CodeWriter {
             int num = funcNamesNum.get(funcName);
             funcNamesNum.put(funcName, ++num);
         }
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    private void writeInit() throws IOException {
+        ArrayList<String> code = new ArrayList<>();
+        code.add("@256");
+        code.add("D=A");
+        code.add("@SP");
+        code.add("M=D");
+        this.writeCode(code);
+        this.writeCall(CommandType.C_CALL, "Sys.init", 0);
     }
 }

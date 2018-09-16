@@ -11,6 +11,7 @@ public class App
 
         while (parser.hasMoreCommands()) {
             parser.advance();
+            codeWriter.setFileName(parser.getCurrentFileName());
             switch (parser.getCommandType()) {
                 case C_ARITHMETIC:
                     codeWriter.writeArithmetic(parser.getCurrentCommand());
